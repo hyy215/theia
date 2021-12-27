@@ -122,7 +122,7 @@ export class MonacoQuickInputImplementation implements monaco.quickInput.IQuickI
         document.body.appendChild(overlayWidgets);
         const container = this.container = document.createElement('quick-input-container');
         container.style.position = 'absolute';
-        container.style.top = '0px';
+        container.style.top = '32px';
         container.style.right = '50%';
         container.style.zIndex = '1000000';
         overlayWidgets.appendChild(container);
