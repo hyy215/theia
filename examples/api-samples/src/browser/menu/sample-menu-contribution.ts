@@ -20,6 +20,9 @@ import {
     MenuContribution, MenuModelRegistry, MenuNode, MessageService, SubMenuOptions
 } from '@theia/core/lib/common';
 import { inject, injectable, interfaces } from '@theia/core/shared/inversify';
+import { ProblemManager } from '@theia/markers/lib/browser/problem/problem-manager';
+import URI from '@theia/core/lib/common/uri';
+import { URI as Uri } from 'vscode-uri';
 
 const SampleCommand: Command = {
     id: 'sample-command',
@@ -60,6 +63,9 @@ export class SampleCommandContribution implements CommandContribution {
     @inject(MessageService)
     protected readonly messageService: MessageService;
 
+    @inject(ProblemManager)
+    protected readonly problemManager: ProblemManager;
+
     registerCommands(commands: CommandRegistry): void {
         commands.registerCommand(SampleCommand, {
             execute: () => {
@@ -68,7 +74,20 @@ export class SampleCommandContribution implements CommandContribution {
         });
         commands.registerCommand(SampleCommand2, {
             execute: () => {
-                alert('This is sample command2!');
+                // alert('This is sample command2!');
+                for (let i = 0; i < 2000; i++) {
+                    const fileUri = new URI(Uri.file('test' + i));
+                    this.problemManager.setMarkers(fileUri, 'test' + i, [{
+                        message: 'test' + i,
+                        range: {
+                            /**
+                             * 页面中显示的为 [start.line + 1, start.character + 1]
+                             */
+                            start: { line: i, character: 0 },
+                            end: { line: i, character: 5 }
+                        },
+                    }]);
+                }
             }
         });
         commands.registerCommand(SampleCommandConfirmDialog, {

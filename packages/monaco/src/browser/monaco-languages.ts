@@ -50,24 +50,27 @@ export class MonacoLanguages implements LanguageService {
     }
 
     protected updateMarkers(uri: URI): void {
-        const uriString = uri.toString();
-        const owners = new Map<string, Diagnostic[]>();
-        for (const marker of this.problemManager.findMarkers({ uri })) {
-            const diagnostics = owners.get(marker.owner) || [];
-            diagnostics.push(marker.data);
-            owners.set(marker.owner, diagnostics);
-        }
-        const toClean = new Set<string>(this.makers.keys());
-        for (const [owner, diagnostics] of owners) {
-            toClean.delete(owner);
-            const collection = this.makers.get(owner) || new MonacoDiagnosticCollection(owner, this.p2m);
-            collection.set(uriString, diagnostics);
-            this.makers.set(owner, collection);
-        }
-        for (const owner of toClean) {
-            const collection = this.makers.get(owner);
-            if (collection) {
-                collection.set(uriString, []);
+        const model = monaco.editor.getModel(monaco.Uri.parse(uri.toString()));
+        if (model) {
+            const uriString = uri.toString();
+            const owners = new Map<string, Diagnostic[]>();
+            for (const marker of this.problemManager.findMarkers({ uri })) {
+                const diagnostics = owners.get(marker.owner) || [];
+                diagnostics.push(marker.data);
+                owners.set(marker.owner, diagnostics);
+            }
+            const toClean = new Set<string>(this.makers.keys());
+            for (const [owner, diagnostics] of owners) {
+                toClean.delete(owner);
+                const collection = this.makers.get(owner) || new MonacoDiagnosticCollection(owner, this.p2m);
+                collection.set(uriString, diagnostics);
+                this.makers.set(owner, collection);
+            }
+            for (const owner of toClean) {
+                const collection = this.makers.get(owner);
+                if (collection) {
+                    collection.set(uriString, []);
+                }
             }
         }
     }
