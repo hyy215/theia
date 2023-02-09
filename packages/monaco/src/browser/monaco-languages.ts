@@ -22,7 +22,7 @@ import { MaybePromise, Mutable } from '@theia/core/lib/common/types';
 import { Disposable } from '@theia/core/lib/common/disposable';
 import { CancellationToken } from '@theia/core/lib/common/cancellation';
 import { Language, LanguageService } from '@theia/core/lib/browser/language-service';
-import { MonacoDiagnosticCollection } from './monaco-diagnostic-collection';
+import { MonacoModelDiagnostics } from './monaco-diagnostic-collection';
 import { ProtocolToMonacoConverter } from './protocol-to-monaco-converter';
 import * as monaco from '@theia/monaco-editor-core';
 
@@ -36,41 +36,40 @@ export class MonacoLanguages implements LanguageService {
 
     readonly workspaceSymbolProviders: WorkspaceSymbolProvider[] = [];
 
-    protected readonly makers = new Map<string, MonacoDiagnosticCollection>();
+    protected readonly diagnostics = new Map<string, MonacoModelDiagnostics | undefined>();
 
     @inject(ProblemManager) protected readonly problemManager: ProblemManager;
     @inject(ProtocolToMonacoConverter) protected readonly p2m: ProtocolToMonacoConverter;
 
     @postConstruct()
     protected init(): void {
-        for (const uri of this.problemManager.getUris()) {
-            this.updateMarkers(new URI(uri));
-        }
-        this.problemManager.onDidChangeMarkers(uri => this.updateMarkers(uri));
+        monaco.editor.onDidCreateModel(model => this.updateMarkers(model));
+        this.problemManager.onDidChangeMarkers(uri => {
+            const model = monaco.editor.getModel(monaco.Uri.parse(uri.toString()));
+            if (model) {
+                this.updateMarkers(model);
+            }
+        });
     }
 
-    protected updateMarkers(uri: URI): void {
-        const model = monaco.editor.getModel(monaco.Uri.parse(uri.toString()));
-        if (model) {
-            const uriString = uri.toString();
-            const owners = new Map<string, Diagnostic[]>();
-            for (const marker of this.problemManager.findMarkers({ uri })) {
-                const diagnostics = owners.get(marker.owner) || [];
-                diagnostics.push(marker.data);
-                owners.set(marker.owner, diagnostics);
-            }
-            const toClean = new Set<string>(this.makers.keys());
-            for (const [owner, diagnostics] of owners) {
-                toClean.delete(owner);
-                const collection = this.makers.get(owner) || new MonacoDiagnosticCollection(owner, this.p2m);
-                collection.set(uriString, diagnostics);
-                this.makers.set(owner, collection);
-            }
-            for (const owner of toClean) {
-                const collection = this.makers.get(owner);
-                if (collection) {
-                    collection.set(uriString, []);
-                }
+    protected updateMarkers(model: monaco.editor.ITextModel): void {
+        const uriString = model.uri.toString();
+        const uri = new URI(uriString);
+
+        const owners = new Map<string, Diagnostic[]>();
+        for (const marker of this.problemManager.findMarkers({ uri })) {
+            const diagnostics = owners.get(marker.owner) || [];
+            diagnostics.push(marker.data);
+            owners.set(marker.owner, diagnostics);
+        }
+
+        for (const [owner, diagnostics] of owners) {
+            const existing = this.diagnostics.get(uriString);
+            if (existing) {
+                existing.diagnostics = diagnostics;
+            } else {
+                const modelDiagnostics = new MonacoModelDiagnostics(uriString, diagnostics, owner, this.p2m);
+                this.diagnostics.set(uriString, modelDiagnostics);
             }
         }
     }
