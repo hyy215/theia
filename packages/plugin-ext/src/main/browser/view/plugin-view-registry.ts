@@ -429,6 +429,7 @@ export class PluginViewRegistry implements FrontendApplicationContribution {
 
     async resolveWebviewView(viewId: string, webview: WebviewView, cancellation: CancellationToken): Promise<void> {
         const resolver = this.webviewViewResolvers.get(viewId);
+        console.log('hyy resolve webview view ??', viewId, !!resolver);
         if (resolver) {
             return resolver.resolve(webview, cancellation);
         }
@@ -442,6 +443,7 @@ export class PluginViewRegistry implements FrontendApplicationContribution {
     }
 
     async registerWebviewView(viewId: string, resolver: WebviewViewResolver): Promise<Disposable> {
+        console.log('hyy3 registe rWebview view');
         if (this.webviewViewResolvers.has(viewId)) {
             throw new Error(`View resolver already registered for ${viewId}`);
         }
@@ -627,6 +629,7 @@ export class PluginViewRegistry implements FrontendApplicationContribution {
             }
             if (viewDataWidget) {
                 widget.addWidget(viewDataWidget);
+                this.views
             }
         }
     }
@@ -889,6 +892,7 @@ export class PluginViewRegistry implements FrontendApplicationContribution {
 
     protected async initView(viewId: string, toDispose: DisposableCollection): Promise<void> {
         const view = await this.getView(viewId);
+        console.log('hyy init view', viewId, !!view);
         if (toDispose.disposed) {
             return;
         }

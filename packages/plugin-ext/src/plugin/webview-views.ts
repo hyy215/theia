@@ -52,6 +52,7 @@ export class WebviewViewsExtImpl implements WebviewViewsExt {
             retainContextWhenHidden?: boolean
         }
     ): Disposable {
+        console.log('hyy1 register webviewView provider, view providers saved.');
         if (this.viewProviders.has(viewType)) {
             throw new Error(`View provider for '${viewType}' already registered`);
         }

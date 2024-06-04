@@ -59,13 +59,14 @@ export class WebviewViewsMainImpl implements WebviewViewsMain, Disposable {
     }
 
     async $registerWebviewViewProvider(viewType: string, options: { retainContextWhenHidden?: boolean, serializeBuffersForPostMessage: boolean }): Promise<void> {
-
+        console.log('hyy2 $register webview view provider');
         if (this.webviewViewProviders.has(viewType)) {
             throw new Error(`View provider for ${viewType} already registered`);
         }
 
         const registration = await this.pluginViewRegistry.registerWebviewView(viewType, {
             resolve: async (webviewView: WebviewView, cancellation: CancellationToken) => {
+                console.log('hyy4 resolve');
                 const handle = webviewView.webview.identifier.id;
                 this.webviewViews.set(handle, webviewView);
                 this.webviewsMain.hookWebview(webviewView.webview);
